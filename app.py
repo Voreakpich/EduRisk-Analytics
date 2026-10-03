@@ -2,13 +2,98 @@
 # Step 1: Import required libraries
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+from streamlit_option_menu import option_menu
 
 # Step 2: Page Configuration ---
 st.set_page_config(
-    page_title="EduRisk Analytics - Lab 01",
+    page_title="EduRisk Analytics - Lab 02",
     page_icon="🎓",
     layout="centered"
 )
+
+# Step 3 (Style): Blue background and global styling
+st.markdown("""
+<style>
+    /* Cream/Beige gradient background for the main content area */
+    [data-testid='stAppViewContainer'] {
+        background: linear-gradient(135deg, #FFFDD0, #F5F5DC);
+    }
+
+    /* Light background for the top header bar */
+    [data-testid='stHeader'] {
+        background: #FFFDD0 !important;
+    }
+
+    /* Make all header/toolbar button icons dark */
+    header button svg, header button span {
+        fill: #333333 !important;
+        color: #333333 !important;
+    }
+
+    /* Force sidebar collapse/expand button to dark */
+    [data-testid='stSidebarCollapsedControl'] {
+        background: transparent !important;
+    }
+    [data-testid='stSidebarCollapsedControl'] button {
+        background: transparent !important;
+        border: 1px solid rgba(0,0,0,0.2) !important;
+        border-radius: 6px !important;
+    }
+    [data-testid='stSidebarCollapsedControl'] button svg,
+    [data-testid='stSidebarCollapsedControl'] button span,
+    [data-testid='stSidebarNavItems'] button svg,
+    section[data-testid='stSidebar'] button svg {
+        fill: #333333 !important;
+        color: #333333 !important;
+    }
+
+    /* Premium Sidebar Background & Design */
+    [data-testid='stSidebar'] {
+        background: #F0EAD6 !important;
+        border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
+    }
+
+    /* Global font: Times New Roman, dark color, size 18px */
+    html, body, p, div, label, li, a {
+        font-family: 'Times New Roman', Times, serif !important;
+        color: #333333 !important;
+        font-size: 18px !important;
+    }
+
+    /* Fix dropdown list text color (make it dark on white background) */
+    div[data-baseweb="popover"] div, 
+    div[data-baseweb="popover"] span,
+    ul[role="listbox"] li, 
+    ul[role="listbox"] span {
+        color: #0a1628 !important;
+    }
+
+    /* Metric cards premium styling (Light Theme) */
+    [data-testid="stMetric"] {
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+    }
+    [data-testid="stMetricLabel"] {
+        color: #555555 !important;
+        font-size: 14px !important;
+    }
+    [data-testid="stMetricValue"] {
+        color: #333333 !important;
+        font-size: 32px !important;
+        font-weight: bold;
+    }
+
+    /* Heading sizes */
+    h1 { font-size: 38px !important; }
+    h2 { font-size: 28px !important; }
+    h3 { font-size: 26px !important; }
+</style>
+""", unsafe_allow_html=True)
 
 # Step 3: Sample Student Data ---
 student_df = pd.DataFrame({
@@ -34,6 +119,23 @@ student_df["Risk Level"] = student_df.apply(
     axis=1
 )
 
+# Step 5b: Risk level color map for charts
+risk_color_map = {
+    "Low Risk": "#9CBF96",     # Soft Sage Green
+    "Medium Risk": "#E4C580",  # Soft Mustard/Gold
+    "High Risk": "#D98A7F"     # Soft Terracotta/Rose
+}
+
+# Step 5c: Function to highlight risk levels in dataframes
+def highlight_risk(val):
+    if val == "High Risk":
+        return "background-color: #D98A7F; color: #333333; font-weight: bold;"
+    elif val == "Medium Risk":
+        return "background-color: #E4C580; color: #333333; font-weight: bold;"
+    elif val == "Low Risk":
+        return "background-color: #9CBF96; color: #333333; font-weight: bold;"
+    return ""
+
 # Step 6: Compute Summary Statistics ---
 total_students = len(student_df)
 average_score = student_df["Score"].mean()
@@ -42,10 +144,19 @@ low_score_students = student_df[student_df["Score"] < 60].shape[0]
 
 # Step 7: Sidebar Navigation ---
 with st.sidebar:
-    st.title("EduRisk Menu")
-    selected_page = st.radio(
-        "Select Page",
-        ["Home", "Dashboard", "Student Data", "Risk Checker", "About"]
+    selected_page = option_menu(
+        menu_title="EduRisk",
+        options=["Home", "Dashboard", "Student Data", "Risk Checker", "About"],
+        icons=["house", "speedometer2", "table", "shield-check", "info-circle"],
+        menu_icon="mortarboard",
+        default_index=0,
+        styles={
+            "container": {"padding": "15px", "background-color": "rgba(255, 255, 255, 0.5)", "border-radius": "10px", "border": "1px solid rgba(0,0,0,0.1)"},
+            "icon": {"color": "#333333", "font-size": "18px"}, 
+            "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px", "margin-bottom": "5px", "--hover-color": "rgba(255,255,255,0.8)", "color": "#333333"},
+            "nav-link-selected": {"background-color": "white", "color": "#333333", "font-weight": "bold", "box-shadow": "0 2px 5px rgba(0,0,0,0.05)"},
+            "menu-title": {"color": "#333333", "font-weight": "bold", "font-size": "22px", "padding-bottom": "15px"}
+        }
     )
 
 # Step 8: Home Page ---
@@ -82,7 +193,8 @@ elif selected_page == "Student Data":
         st.metric("High Risk Students", high_risk_students)
 
     st.subheader("Full Student Dataset")
-    st.dataframe(student_df) 
+    styled_df = student_df.style.map(highlight_risk, subset=["Risk Level"])
+    st.dataframe(styled_df)
 
 # -- Step 25: Create the Risk Checker Page
 elif selected_page == "Risk Checker":
@@ -114,33 +226,35 @@ elif selected_page == "Dashboard":
 
     st.write("Use the filters below to explore student performance.")
 
-    # Step 10: Add Course Filter
-    selected_course = st.selectbox(
-        "Select Course",
-        ["All"] + list(student_df["Course"].unique())
-    )
+    with st.container():
+        st.markdown("### 🎛️ Filter Options")
+        filter_col1, filter_col2 = st.columns(2)
+        
+        with filter_col1:
+            # Step 10: Add Course Filter
+            selected_course = st.selectbox(
+                "Select Course",
+                ["All"] + list(student_df["Course"].unique())
+            )
+            # Step 12: Add Minimum Attendance Slider
+            min_attendance = st.slider(
+                "Minimum Attendance (%)",
+                0, 100, 0
+            )
+            
+        with filter_col2:
+            # Step 11: Add Risk Level Filter
+            selected_risk = st.selectbox(
+                "Select Risk Level",
+                ["All", "Low Risk", "Medium Risk", "High Risk"]
+            )
+            # Step 13: Add Minimum Score Slider
+            min_score = st.slider(
+                "Minimum Score",
+                0, 100, 0
+            )
 
-    # Step 11: Add Risk Level Filter
-    selected_risk = st.selectbox(
-        "Select Risk Level",
-        ["All", "Low Risk", "Medium Risk", "High Risk"]
-    )
-
-    # Step 12: Add Minimum Attendance Slider
-    min_attendance = st.slider(
-        "Minimum Attendance",
-        0,
-        100,
-        0
-    )
-
-    # Step 13: Add Minimum Score Slider
-    min_score = st.slider(
-        "Minimum Score",
-        0,
-        100,
-        0
-    )
+    st.markdown("<br>", unsafe_allow_html=True)
 
     # Step 14: Add Filtering Logic
     filtered_df = student_df.copy()
@@ -194,7 +308,8 @@ elif selected_page == "Dashboard":
 
     if show_data:
         st.subheader("Filtered Student Dataset")
-        st.dataframe(filtered_df)
+        styled_filtered = filtered_df.style.map(highlight_risk, subset=["Risk Level"])
+        st.dataframe(styled_filtered)
     else: 
 
 # -- Step 21: Add Download Button
@@ -216,8 +331,25 @@ elif selected_page == "Dashboard":
         st.write("Student Scores")
 
         if len(filtered_df) > 0:
-            score_chart = filtered_df.set_index("Student Name")["Score"]
-            st.bar_chart(score_chart)
+            fig_score = px.bar(
+                filtered_df,
+                x="Student Name",
+                y="Score",
+                color="Risk Level",
+                color_discrete_map=risk_color_map,
+                text="Score"
+            )
+            fig_score.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#333333", family="Times New Roman", size=14),
+                xaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
+                yaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
+                showlegend=False,
+                margin=dict(t=30, b=40, l=40, r=20)
+            )
+            fig_score.update_traces(textposition="outside")
+            st.plotly_chart(fig_score, use_container_width=True)
         else:
             st.warning("No data available for score chart.") 
 
@@ -226,8 +358,27 @@ elif selected_page == "Dashboard":
         st.write("Risk Level Count")
 
         if len(filtered_df) > 0:
-            risk_count = filtered_df["Risk Level"].value_counts()
-            st.bar_chart(risk_count)
+            risk_count = filtered_df["Risk Level"].value_counts().reset_index()
+            risk_count.columns = ["Risk Level", "Count"]
+            fig_risk = px.bar(
+                risk_count,
+                x="Risk Level",
+                y="Count",
+                color="Risk Level",
+                color_discrete_map=risk_color_map,
+                text="Count"
+            )
+            fig_risk.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#333333", family="Times New Roman", size=14),
+                xaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
+                yaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
+                showlegend=False,
+                margin=dict(t=30, b=40, l=40, r=20)
+            )
+            fig_risk.update_traces(textposition="outside")
+            st.plotly_chart(fig_risk, use_container_width=True)
         else:
             st.warning("No data available for risk chart.")
 
