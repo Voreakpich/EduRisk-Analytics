@@ -7,39 +7,57 @@ from streamlit_option_menu import option_menu
 
 # Step 2: Page Configuration ---
 st.set_page_config(
-    page_title="EduRisk Analytics - Lab 02",
+    page_title="EduRisk Analytics - Lab 03",
     page_icon="🎓",
-    layout="centered"
-)
+    layout="wide"
+) 
+# Add a CSV Loading Function
+def load_student_data():
+    try:
+        data = pd.read_csv("students.csv")
+        return data
+    except FileNotFoundError:
+        st.error(
+            "students.csv was not found. Please place it in the same folder as app.py."
+        )
+        st.stop()
+# Load the Student Data
+student_df = load_student_data() 
 
 # Step 3 (Style): Blue background and global styling
+# Injecting custom CSS to completely redesign the Streamlit app's look and feel
 st.markdown("""
 <style>
     /* Cream/Beige gradient background for the main content area */
+    /* linear-gradient creates a smooth transition between two light colors */
     [data-testid='stAppViewContainer'] {
         background: linear-gradient(135deg, #FFFDD0, #F5F5DC);
     }
 
-    /* Light background for the top header bar */
+    /* Light background for the top header bar where the menu button is */
     [data-testid='stHeader'] {
         background: #FFFDD0 !important;
     }
 
-    /* Make all header/toolbar button icons dark */
+    /* Make all header/toolbar button icons dark so they are visible on the light background */
     header button svg, header button span {
         fill: #333333 !important;
         color: #333333 !important;
     }
 
-    /* Force sidebar collapse/expand button to dark */
+    /* Force the sidebar collapse/expand button (top left arrow) to have a transparent background */
     [data-testid='stSidebarCollapsedControl'] {
         background: transparent !important;
     }
+    
+    /* Style the sidebar collapse button to have a subtle border and rounded corners */
     [data-testid='stSidebarCollapsedControl'] button {
         background: transparent !important;
         border: 1px solid rgba(0,0,0,0.2) !important;
         border-radius: 6px !important;
     }
+    
+    /* Ensure the icon inside the sidebar collapse button remains dark */
     [data-testid='stSidebarCollapsedControl'] button svg,
     [data-testid='stSidebarCollapsedControl'] button span,
     [data-testid='stSidebarNavItems'] button svg,
@@ -49,19 +67,21 @@ st.markdown("""
     }
 
     /* Premium Sidebar Background & Design */
+    /* This targets the actual left sidebar container */
     [data-testid='stSidebar'] {
-        background: #F0EAD6 !important;
-        border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
+        background: #F0EAD6 !important; /* Soft warm beige */
+        border-right: 1px solid rgba(0, 0, 0, 0.05) !important; /* Very faint line separating it from main app */
     }
 
-    /* Global font: Times New Roman, dark color, size 18px */
+    /* Global font configuration: Sets the font family, default text color, and base size */
     html, body, p, div, label, li, a {
         font-family: 'Times New Roman', Times, serif !important;
-        color: #333333 !important;
+        color: #333333 !important; /* Dark grey instead of pure black for softer contrast */
         font-size: 18px !important;
     }
 
     /* Fix dropdown list text color (make it dark on white background) */
+    /* This ensures Streamlit selectboxes remain readable when clicked */
     div[data-baseweb="popover"] div, 
     div[data-baseweb="popover"] span,
     ul[role="listbox"] li, 
@@ -70,13 +90,14 @@ st.markdown("""
     }
 
     /* Metric cards premium styling (Light Theme) */
+    /* Adds a "Glassmorphism" effect to the metrics (Students, Average Score, etc.) */
     [data-testid="stMetric"] {
-        background: rgba(255, 255, 255, 0.6);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        border-radius: 12px;
-        padding: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.6); /* Semi-transparent white */
+        border: 1px solid rgba(0, 0, 0, 0.1); /* Subtle dark border */
+        border-radius: 12px; /* Rounded corners */
+        padding: 15px; /* Inner spacing */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Soft drop shadow below the card */
+        backdrop-filter: blur(10px); /* Blurs the background behind the card */
     }
     [data-testid="stMetricLabel"] {
         color: #555555 !important;
@@ -96,13 +117,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Step 3: Sample Student Data ---
-student_df = pd.DataFrame({
-    "Student Name": ["Dara", "Sophea", "Vuthy", "Malis", "Rithy", "Sreyneang", "Chan", "Bopha"],
-    "Course": ["Python", "Statistics", "Python", "Database", "Web App", "Database", "Python", "Statistics"],
-    "Score": [85, 68, 45, 92, 58, 91, 72, 62],
-    "Attendance": [90, 75, 50, 95, 60, 94, 80, 88],
-    "Study Hours": [12, 8, 3, 15, 5, 14, 9, 7],
-})
 
 # Step 4: Add a risk levels function ---
 def get_risk_level(score, attendance):
@@ -113,9 +127,12 @@ def get_risk_level(score, attendance):
     else:
         return "Low Risk"
 
-# Step 5: Add a risk levels column ---
+# Add a risk levels column ---
 student_df["Risk Level"] = student_df.apply(
-    lambda row: get_risk_level(row["Score"], row["Attendance"]),
+    lambda row: get_risk_level(
+        row["Score"],
+        row["Attendance"]
+    ),
     axis=1
 )
 
@@ -143,18 +160,24 @@ average_attendance = student_df["Attendance"].mean()
 low_score_students = student_df[student_df["Score"] < 60].shape[0]
 
 # Step 7: Sidebar Navigation ---
+# Using streamlit_option_menu for a premium, icon-based navigation menu
 with st.sidebar:
     selected_page = option_menu(
-        menu_title="EduRisk",
-        options=["Home", "Dashboard", "Student Data", "Risk Checker", "About"],
-        icons=["house", "speedometer2", "table", "shield-check", "info-circle"],
-        menu_icon="mortarboard",
-        default_index=0,
+        menu_title="EduRisk", # Title at the top of the menu card
+        options=["Home", "Dashboard", "Student Data", "Risk Checker", "About"], # The actual tabs/pages
+        icons=["house", "speedometer2", "table", "shield-check", "info-circle"], # Bootstrap icons for each tab
+        menu_icon="mortarboard", # The icon next to the "EduRisk" title
+        default_index=0, # Home is selected by default
         styles={
+            # Container is the floating card wrapping the whole menu
             "container": {"padding": "15px", "background-color": "rgba(255, 255, 255, 0.5)", "border-radius": "10px", "border": "1px solid rgba(0,0,0,0.1)"},
+            # Style for the icons next to each page name
             "icon": {"color": "#333333", "font-size": "18px"}, 
+            # Style for each unselected page link
             "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px", "margin-bottom": "5px", "--hover-color": "rgba(255,255,255,0.8)", "color": "#333333"},
+            # Style for the currently active/selected page
             "nav-link-selected": {"background-color": "white", "color": "#333333", "font-weight": "bold", "box-shadow": "0 2px 5px rgba(0,0,0,0.05)"},
+            # Style for the "EduRisk" title at the top
             "menu-title": {"color": "#333333", "font-weight": "bold", "font-size": "22px", "padding-bottom": "15px"}
         }
     )
@@ -162,39 +185,50 @@ with st.sidebar:
 # Step 8: Home Page ---
 if selected_page == "Home":
     st.title("🎓 EduRisk Analytics")
-    st.subheader("Interactive Student Risk Monitoring Dashboard")
-    st.write("Welcome to Lab 02.")
-    st.write("In this lab, you will use Streamlit widgets to explore student performance data.")
-    st.success("Lab 02 app is running successfully!")
+    st.subheader("Frontend Prototype with CSV Data Loading")
+    st.write("Welcome to Lab 03.")
+    st.write(
+        "In this lab, the app loads student data from students.csv "
+        "using Pandas instead of storing data directly inside app.py."
+    )
+    st.success("Lab 03 app is running successfully!")
 
 # -- Step 24: Update the Student Data Page
 elif selected_page == "Student Data":
     st.title("Student Data")
 
-    total_students = len(student_df)
-    average_score = student_df["Score"].mean()
-    average_attendance = student_df["Attendance"].mean()
-    high_risk_students = student_df[
-        student_df["Risk Level"] == "High Risk"
-    ].shape[0]
+    st.write(
+        "This page displays and inspects the dataset loaded from students.csv."
+    )
 
-    col1, col2, col3, col4 = st.columns(4)
+    st.subheader("Data Inspection")
 
-    with col1:
-        st.metric("Total Students", total_students)
+    # Show shape as two metric cards
+    shape_col1, shape_col2 = st.columns(2)
+    with shape_col1:
+        st.metric("Total Rows", student_df.shape[0])
+    with shape_col2:
+        st.metric("Total Columns", student_df.shape[1])
 
-    with col2:
-        st.metric("Average Score", round(average_score, 2))
+    # Show column names as styled badges
+    st.write("Column Names:")
+    badge_html = " ".join([
+        f'<span style="background-color:#E4C580; color:#333333; padding:4px 10px; '
+        f'border-radius:12px; font-size:13px; font-weight:bold; margin:3px; '
+        f'display:inline-block;">{col}</span>'
+        for col in student_df.columns.tolist()
+    ])
+    st.markdown(badge_html, unsafe_allow_html=True)
 
-    with col3:
-        st.metric("Average Attendance", f"{round(average_attendance, 2)}%")
+    st.write("")
 
-    with col4:
-        st.metric("High Risk Students", high_risk_students)
+    st.write("First 5 Rows:")
+    styled_head = student_df.head().style.map(highlight_risk, subset=["Risk Level"])
+    st.dataframe(styled_head, use_container_width=True)
 
     st.subheader("Full Student Dataset")
     styled_df = student_df.style.map(highlight_risk, subset=["Risk Level"])
-    st.dataframe(styled_df)
+    st.dataframe(styled_df, use_container_width=True)
 
 # -- Step 25: Create the Risk Checker Page
 elif selected_page == "Risk Checker":
@@ -220,71 +254,20 @@ elif selected_page == "Risk Checker":
         else:
             st.error("Risk Level: High Risk")
 
-# Step 9: Dashboard Page
+# Step 9: Design Dashboard Code
 elif selected_page == "Dashboard":
-    st.title("Interactive Dashboard")
+    st.title("Dashboard Prototype")
 
-    st.write("Use the filters below to explore student performance.")
+    st.write(
+        "This dashboard gives a quick overview of student performance "
+        "using data loaded from students.csv."
+    )
 
-    with st.container():
-        st.markdown("### 🎛️ Filter Options")
-        filter_col1, filter_col2 = st.columns(2)
-        
-        with filter_col1:
-            # Step 10: Add Course Filter
-            selected_course = st.selectbox(
-                "Select Course",
-                ["All"] + list(student_df["Course"].unique())
-            )
-            # Step 12: Add Minimum Attendance Slider
-            min_attendance = st.slider(
-                "Minimum Attendance (%)",
-                0, 100, 0
-            )
-            
-        with filter_col2:
-            # Step 11: Add Risk Level Filter
-            selected_risk = st.selectbox(
-                "Select Risk Level",
-                ["All", "Low Risk", "Medium Risk", "High Risk"]
-            )
-            # Step 13: Add Minimum Score Slider
-            min_score = st.slider(
-                "Minimum Score",
-                0, 100, 0
-            )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Step 14: Add Filtering Logic
-    filtered_df = student_df.copy()
-
-    if selected_course != "All":
-        filtered_df = filtered_df[filtered_df["Course"] == selected_course]
-
-    if selected_risk != "All":
-        filtered_df = filtered_df[filtered_df["Risk Level"] == selected_risk]
-
-    filtered_df = filtered_df[
-        filtered_df["Attendance"] >= min_attendance
-    ]
-
-    filtered_df = filtered_df[
-        filtered_df["Score"] >= min_score
-    ]
-
-    # Step 15: Add Dashboard Metrics
-    total_students = len(filtered_df)
-
-    if len(filtered_df) > 0:
-        average_score = filtered_df["Score"].mean()
-        average_attendance = filtered_df["Attendance"].mean()
-    else:
-        average_score = 0
-        average_attendance = 0
-
-    high_risk_students = filtered_df[
-        filtered_df["Risk Level"] == "High Risk"
+    total_students = len(student_df)
+    average_score = student_df["Score"].mean()
+    average_attendance = student_df["Attendance"].mean()
+    high_risk_students = student_df[
+        student_df["Risk Level"] == "High Risk"
     ].shape[0]
 
     st.subheader("Dashboard Metrics")
@@ -301,20 +284,76 @@ elif selected_page == "Dashboard":
         st.metric("Average Attendance", f"{round(average_attendance, 2)}%")
 
     with col4:
-        st.metric("High Risk", high_risk_students) 
+        st.metric("High Risk", high_risk_students)
+
+    st.subheader("Student Records")
+    st.write("This table shows student data loaded from students.csv.")
+    styled_table = student_df.style.map(highlight_risk, subset=["Risk Level"])
+    st.dataframe(styled_table, use_container_width=True)
+
+    st.subheader("Charts")
+
+    chart_col1, chart_col2 = st.columns(2)
+
+    with chart_col1:
+        st.write("Student Score Chart")
+        fig_score = px.bar(
+            student_df,
+            x="Student Name",
+            y="Score",
+            color="Risk Level",
+            color_discrete_map=risk_color_map,
+            text="Score"
+        )
+        fig_score.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#333333", family="Times New Roman", size=14),
+            xaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
+            yaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
+            showlegend=True,
+            margin=dict(t=30, b=40, l=40, r=20)
+        )
+        fig_score.update_traces(textposition="outside")
+        st.plotly_chart(fig_score, use_container_width=True)
+
+    with chart_col2:
+        st.write("Course Count")
+        course_count = student_df["Course"].value_counts().reset_index()
+        course_count.columns = ["Course", "Count"]
+        fig_course = px.pie(
+            course_count,
+            names="Course",
+            values="Count",
+            color_discrete_sequence=["#9CBF96", "#E4C580", "#D98A7F", "#7FB3D3", "#C3A8D1"],
+            hole=0.4
+        )
+        fig_course.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#333333", family="Times New Roman", size=14),
+            showlegend=True,
+            margin=dict(t=30, b=20, l=20, r=20)
+        )
+        fig_course.update_traces(textinfo="label+percent", textposition="outside")
+        st.plotly_chart(fig_course, use_container_width=True)
+
+    st.info(
+        "Ethics Reminder: Academic monitoring should support students, "
+        "not label or punish them."
+    ) 
 
 # -- Step 20: Add Show or Hide Dataset Checkbox
     show_data = st.checkbox("Show Filtered Dataset", True)
 
     if show_data:
-        st.subheader("Filtered Student Dataset")
-        styled_filtered = filtered_df.style.map(highlight_risk, subset=["Risk Level"])
+        st.subheader("Student Dataset")
+        styled_filtered = student_df.style.map(highlight_risk, subset=["Risk Level"])
         st.dataframe(styled_filtered)
     else: 
 
 # -- Step 21: Add Download Button
-        st.info("Filtered dataset is hidden.") 
-        csv = filtered_df.to_csv(index=False)
+        st.info("Dataset is hidden.") 
+        csv = student_df.to_csv(index=False)
 
         st.download_button(
             label="Download Filtered Data",
@@ -330,26 +369,28 @@ elif selected_page == "Dashboard":
     with chart_col1:
         st.write("Student Scores")
 
-        if len(filtered_df) > 0:
+        if len(student_df) > 0:
+            # Create a Plotly bar chart
             fig_score = px.bar(
-                filtered_df,
+                student_df,
                 x="Student Name",
                 y="Score",
                 color="Risk Level",
-                color_discrete_map=risk_color_map,
-                text="Score"
+                color_discrete_map=risk_color_map, # Apply the pastel colors we defined in Step 5b
+                text="Score" # Show the actual score number above the bar
             )
+            # Update the chart layout to blend with our cream background
             fig_score.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#333333", family="Times New Roman", size=14),
-                xaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
+                paper_bgcolor="rgba(0,0,0,0)", # Makes the outer background transparent
+                plot_bgcolor="rgba(0,0,0,0)",  # Makes the inner plot background transparent
+                font=dict(color="#333333", family="Times New Roman", size=14), # Dark text for readability
+                xaxis=dict(gridcolor="rgba(0,0,0,0.1)"), # Subtle dark gridlines
                 yaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
-                showlegend=False,
-                margin=dict(t=30, b=40, l=40, r=20)
+                showlegend=False, # Hide the legend since colors are self-explanatory
+                margin=dict(t=30, b=40, l=40, r=20) # Trim margins so it fits nicely
             )
-            fig_score.update_traces(textposition="outside")
-            st.plotly_chart(fig_score, use_container_width=True)
+            fig_score.update_traces(textposition="outside") # Put the text label outside the top of the bar
+            st.plotly_chart(fig_score, use_container_width=True) # Render chart in Streamlit
         else:
             st.warning("No data available for score chart.") 
 
@@ -357,9 +398,12 @@ elif selected_page == "Dashboard":
     with chart_col2:
         st.write("Risk Level Count")
 
-        if len(filtered_df) > 0:
-            risk_count = filtered_df["Risk Level"].value_counts().reset_index()
+        if len(student_df) > 0:
+            # First, count how many students fall into each risk level
+            risk_count = student_df["Risk Level"].value_counts().reset_index()
             risk_count.columns = ["Risk Level", "Count"]
+            
+            # Create the bar chart for the counts
             fig_risk = px.bar(
                 risk_count,
                 x="Risk Level",
@@ -368,6 +412,7 @@ elif selected_page == "Dashboard":
                 color_discrete_map=risk_color_map,
                 text="Count"
             )
+            # Apply the exact same layout modifications as the first chart
             fig_risk.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
@@ -386,8 +431,18 @@ elif selected_page == "Dashboard":
 # Step 26: About Page ---
 else:
     st.title("About")
-    st.write("This app is part of Lab 02.")
+
+    st.write("This app is part of Lab 03.")
     st.write("Course: Web App Development for Data Science")
     st.write("Project Theme: EduRisk Analytics")
-    st.write("Topic: Streamlit Interactive Dashboard")
-    st.info("Ethics Reminder: Risk prediction should support students, not punish them.")
+    st.write("Topic: Data Loading, Layout, and Frontend Prototype")
+
+    st.info(
+        "This frontend prototype loads real data from students.csv "
+        "and displays it using Streamlit and Pandas."
+    )
+
+    st.warning(
+        "Ethics Reminder: Student risk information should be used responsibly "
+        "to support learning and student success."
+    )
