@@ -7,7 +7,7 @@ from streamlit_option_menu import option_menu
 
 # Step 2: Page Configuration ---
 st.set_page_config(
-    page_title="EduRisk Analytics - Lab 03",
+    page_title="EduRisk Analytics - Lab 04",
     page_icon="🎓",
     layout="wide"
 ) 
