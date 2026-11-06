@@ -3,11 +3,11 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from streamlit_option_menu import option_menu
+from streamlit_option_menu import option_menu 
 
 # Step 2: Page Configuration ---
 st.set_page_config(
-    page_title="EduRisk Analytics - Lab 03",
+    page_title="EduRisk Analytics - Lab 05",
     page_icon="🎓",
     layout="wide"
 ) 
@@ -189,13 +189,13 @@ with st.sidebar:
 # Step 8: Home Page ---
 if selected_page == "Home":
     st.title("🎓 EduRisk Analytics")
-    st.subheader("Frontend Prototype with CSV Data Loading")
-    st.write("Welcome to Lab 03.")
+    st.subheader("Interactive Dashboard with Visualization and Filters")
+    st.write("Welcome to Lab 05.")
     st.write(
-        "In this lab, the app loads student data from students.csv "
-        "using Pandas instead of storing data directly inside app.py."
+        "In this lab, the app improves the Dashboard page using "
+        "grouped summaries, interactive filters, Streamlit charts, and Plotly charts."
     )
-    st.success("Lab 03 app is running successfully!")
+    st.success("Lab 05 app is running successfully!")
 
 # -- Step 24: Update the Student Data Page
 elif selected_page == "Student Data":
@@ -299,13 +299,18 @@ elif selected_page == "Risk Checker":
         "Ethics Reminder: Risk results should be used as guidance for support, "
         "not as final judgment about a student."
     )
-# Step 9: Design Dashboard Code
+# Step 9: Dashboard page 
 elif selected_page == "Dashboard":
-    st.title("Dashboard Prototype")
+    st.title("Interactive Student Performance Dashboard")
 
     st.write(
-        "This dashboard gives a quick overview of student performance "
-        "using data loaded from students.csv."
+        "Use filters to explore student performance by course, risk level, "
+        "and attendance. The dashboard updates based on your selections."
+    )
+
+    st.warning(
+        "Ethics Reminder: Visualizations should support students and guide "
+        "academic support decisions, not label or punish students."
     )
 
     total_students = len(student_df)
@@ -386,7 +391,181 @@ elif selected_page == "Dashboard":
         "Ethics Reminder: Academic monitoring should support students, "
         "not label or punish them."
     ) 
+# Filter column 
+    st.subheader("Dashboard Filters")
 
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+
+    with filter_col1:
+        course_options = ["All"] + sorted(student_df["Course"].unique())
+        selected_course = st.selectbox(
+            "Filter by Course",
+            course_options
+        )
+    with filter_col2:
+        risk_options = ["All"] + sorted(student_df["Risk Level"].unique())
+        selected_risk = st.selectbox(
+            "Filter by Risk Level",
+            risk_options
+        ) 
+    with filter_col3:
+        minimum_attendance = st.slider(
+            "Minimum Attendance",
+            0,
+            100,
+            0
+        )
+
+# Create a filtered dataframe based on the selected filters
+    filtered_df = student_df.copy()
+
+    if selected_course != "All":
+        filtered_df = filtered_df[
+            filtered_df["Course"] == selected_course
+        ]
+
+    if selected_risk != "All":
+        filtered_df = filtered_df[
+            filtered_df["Risk Level"] == selected_risk
+        ]
+
+    filtered_df = filtered_df[
+        filtered_df["Attendance"] >= minimum_attendance
+    ] 
+
+# Handle Empty Filter Results
+    if filtered_df.empty:
+     st.warning("No students match the selected filters. Please adjust the filters.")
+
+# Add Filtered Metrics
+    st.subheader("Filtered Dashboard Metrics")
+
+    filtered_total_students = len(filtered_df)
+
+    if filtered_total_students > 0:
+        filtered_average_score = filtered_df["Score"].mean()
+        filtered_average_attendance = filtered_df["Attendance"].mean()
+        filtered_high_risk_students = filtered_df[
+            filtered_df["Risk Level"] == "High Risk"
+        ].shape[0]
+    else:
+        filtered_average_score = 0
+        filtered_average_attendance = 0
+        filtered_high_risk_students = 0 
+
+# Display Filtered Metric Cards
+    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+
+    with metric_col1:
+        st.metric("Students", filtered_total_students)
+
+    with metric_col2:
+        st.metric("Average Score", round(filtered_average_score, 2))
+
+    with metric_col3:
+        st.metric(
+            "Average Attendance",
+            f"{round(filtered_average_attendance, 2)}%"
+        )
+
+    with metric_col4:
+        st.metric("High Risk", filtered_high_risk_students)
+
+# Add Risk Level Summary Table 
+    st.subheader("Risk Level Summary")
+
+    if filtered_total_students > 0:
+        risk_summary = filtered_df["Risk Level"].value_counts().reset_index()
+        risk_summary.columns = ["Risk Level", "Students"]
+
+        st.dataframe(risk_summary)
+    else:
+        st.info("No risk summary available for the selected filters.")
+
+# Add Streamlit Charts Section
+    st.subheader("Streamlit Charts")
+
+    chart_col1, chart_col2 = st.columns(2)
+
+# Add Student Score Chart
+    with chart_col1:
+        st.write("Student Scores")
+
+        if filtered_total_students > 0:
+            score_chart = filtered_df.set_index("Student Name")["Score"]
+            st.bar_chart(score_chart)
+        else:
+            st.info("No score chart available.")
+
+# Add Course Count Chart
+    with chart_col2:
+        st.write("Students by Course")
+
+        if filtered_total_students > 0:
+            course_count = filtered_df["Course"].value_counts()
+            st.bar_chart(course_count)
+        else:
+            st.info("No course count chart available.")
+
+# Add Plotly Charts Section
+    st.subheader("Interactive Plotly Charts")
+
+    plotly_col1, plotly_col2 = st.columns(2)
+
+# Add Plotly Risk Distribution Chart
+    with plotly_col1:
+        st.write("Risk Level Distribution")
+
+        if filtered_total_students > 0:
+            risk_summary_chart = filtered_df["Risk Level"].value_counts().reset_index()
+            risk_summary_chart.columns = ["Risk Level", "Students"]
+
+            fig_risk = px.bar(
+                risk_summary_chart,
+                x="Risk Level",
+                y="Students",
+                color="Risk Level",
+                title="Risk Level Distribution",
+                color_discrete_map={
+                    "Low Risk": "#16A34A",
+                    "Medium Risk": "#F59E0B",
+                    "High Risk": "#DC2626"
+                }
+            )
+
+            st.plotly_chart(fig_risk, use_container_width=True)
+        else:
+            st.info("No risk distribution chart available.")
+# Add Plotly Score by Student Chart
+    with plotly_col2:
+        st.write("Student Scores by Risk Level")
+
+        if filtered_total_students > 0:
+            fig_score = px.bar(
+                filtered_df,
+                x="Student Name",
+                y="Score",
+                color="Risk Level",
+                title="Student Scores by Risk Level",
+                color_discrete_map={
+                    "Low Risk": "#16A34A",
+                    "Medium Risk": "#F59E0B",
+                    "High Risk": "#DC2626"
+                }
+            )
+
+            st.plotly_chart(fig_score, use_container_width=True)
+        else:
+            st.info("No score chart available.")
+
+# Add Filtered Student Records Table
+    st.subheader("Filtered Student Records")
+
+    if filtered_total_students > 0:
+        st.dataframe(filtered_df)
+    else:
+        st.info("No student records to display.")
+        
 # -- Step 20: Add Show or Hide Dataset Checkbox
     show_data = st.checkbox("Show Filtered Dataset", True)
 
@@ -477,17 +656,17 @@ elif selected_page == "Dashboard":
 else:
     st.title("About")
 
-    st.write("This app is part of Lab 04.")
+    st.write("This app is part of Lab 05.")
     st.write("Course: Web App Development for Data Science")
     st.write("Project Theme: EduRisk Analytics")
-    st.write("Topic: Forms, Validation, and Session State")
+    st.write("Topic: Visualization and Interactivity")
 
     st.info(
-        "This version improves the Risk Checker page using Streamlit forms, "
-        "input validation, and session state."
+        "This version improves the Dashboard page using grouped summaries, "
+        "interactive filters, Streamlit charts, and Plotly charts."
     )
 
     st.warning(
-        "Ethics Reminder: Student risk information should be used responsibly "
-        "to support learning and student success."
+        "Ethics Reminder: Student performance visualizations should be used "
+        "responsibly to support learning and student success."
     )
